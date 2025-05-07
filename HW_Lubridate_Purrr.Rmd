@@ -1,0 +1,116 @@
+---
+title: "HW_Lubridate_Purrr"
+author: "Shoubith Rajeswaran"
+date: "2025-05-07"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(purrr)
+library(dplyr)  # for piping and data manipulation
+library(tibble) # to view data neatly in tibbles
+```
+
+# Question 1
+
+```{r exercise1_q1}
+# Generate sequence of dates every 2 months from Jan 1, 2015 to Dec 31, 2025
+date_seq <- seq(ymd("2015-01-01"), ymd("2025-12-31"), by = "2 months")
+
+# Extract year, quarter, and ISO week number
+date_info <- tibble(
+  date = date_seq,
+  year = year(date_seq),
+  quarter = quarter(date_seq),
+  iso_week = isoweek(date_seq)
+)
+
+# Display the result
+print(date_info)
+```
+
+# Question 2
+
+```{r exercise2_q2}
+# Vector of sample dates
+sample_dates <- ymd(c("2018-03-15", "2020-07-20", "2023-01-10", "2025-09-05"))
+
+# Create list of consecutive date pairs
+date_pairs <- map2(sample_dates[-length(sample_dates)], sample_dates[-1], ~ interval(.x, .y))
+
+# Calculate difference in months
+diff_months <- map_dbl(date_pairs, ~ time_length(.x, "months"))
+
+# Calculate difference in weeks
+diff_weeks <- map_dbl(date_pairs, ~ time_length(.x, "weeks"))
+
+# Combine results in a tibble
+differences <- tibble(
+  start_date = sample_dates[-length(sample_dates)],
+  end_date = sample_dates[-1],
+  months_between = round(diff_months, 2),
+  weeks_between = round(diff_weeks, 2)
+)
+
+# Display the result
+print(differences)
+```
+
+# Question 3
+
+```{r exercise3_q3}
+# List of numeric vectors
+num_lists <- list(c(4, 16, 25, 36, 49), c(2.3, 5.7, 8.1, 11.4), c(10, 20, 30, 40, 50))
+
+# Compute mean, median, and standard deviation for each sublist
+means <- map_dbl(num_lists, mean)
+medians <- map_dbl(num_lists, median)
+sds <- map_dbl(num_lists, sd)
+
+# Combine results in a tibble
+summary_stats <- tibble(
+  list_number = paste0("List ", seq_along(num_lists)),
+  mean = means,
+  median = medians,
+  standard_deviation = round(sds, 2)
+)
+
+# Display the summary
+print(summary_stats)
+```
+
+# Question 4
+
+```{r exercise4_q4}
+# List of mixed-format date strings
+date_strings <- list("2023-06-10", "2022/12/25", "15-Aug-2021", "InvalidDate")
+
+# Safe date parser using parse_date_time with broader format options
+safe_parse <- possibly(
+  ~ parse_date_time(.x, orders = c("ymd", "Ymd", "d-b-Y", "Y/m/d"), locale = "C"),
+  otherwise = NA
+)
+
+# Apply the safe parser
+parsed_dates <- map(date_strings, safe_parse)
+
+# Extract month names (explicit string conversion)
+month_names <- map_chr(parsed_dates, ~ if (!is.na(.x)) as.character(month(.x, label = TRUE)) else "Invalid")
+
+# Combine into a tibble
+date_results <- tibble(
+  original_input = unlist(date_strings),
+  parsed_date = parsed_dates,
+  month_name = month_names
+)
+
+# Display the result
+print(date_results)
+```
+
+
+
